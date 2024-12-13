@@ -1,0 +1,60 @@
+CREATE TABLE FitnessCenter(
+	FitnessId SERIAL PRIMARY KEY,
+	FitnessName VARCHAR(200) NOT NULL,
+	TimeOpen INT NOT NULL,
+	TimeClose INT NOT NULL
+);
+
+CREATE TABLE Country(
+	CountryId SERIAL PRIMARY KEY,
+	CountryName VARCHAR(150) UNIQUE,
+	CountryPopulation INT,
+	AverageWage INT
+);
+
+
+CREATE TABLE Coach(
+	CoachId SERIAL PRIMARY KEY,
+	CoachName VARCHAR(200) NOT NULL,
+	CoachSurname VARCHAR(200) NOT NULL,
+	DateOfBirth DATE,
+	Gender VARCHAR(50) NOT NULL,
+	Position_ VARCHAR(150),
+	CountryId INT REFERENCES Country(CountryId),
+	FitnessId INT REFERENCES FitnessCenter(FitnessId)
+	
+);
+
+
+CREATE TABLE Activity(
+	ActivityId SERIAL PRIMARY KEY,
+	ActivityName VARCHAR(150) NOT NULL,
+	ActivityType VARCHAR(200) NOT NULL,
+	FitnessId INT REFERENCES FitnessCenter(FitnessId)
+);
+
+CREATE TABLE Schedule(
+	ScheduleId SERIAL PRIMARY KEY,
+	ActivityId INT REFERENCES Activity(ActivityId),
+	Date DATE,
+	Capacity INT NOT NULL
+);
+
+CREATE TABLE CoachActivity(
+	ActivityId INT REFERENCES Activity(ActivityId),
+	CoachId INT REFERENCES Coach(CoachId),
+	PRIMARY KEY(ActivityId, CoachId)
+);
+
+CREATE TABLE Members(
+	MemberId SERIAL PRIMARY KEY,
+	MemberName VARCHAR(100) NOT NULL,
+	MemberSurname VARCHAR(100) NOT NULL,
+	CountryId INT REFERENCES Country(CountryId)
+);
+
+CREATE TABLE MemberActivity(
+	MemberId INT REFERENCES Members(MemberId),
+	ActivityId INT REFERENCES Activity(ActivityId),
+	PRIMARY KEY(MemberId, ActivityId)
+);

@@ -1,0 +1,116 @@
+--Prvi upit
+SELECT Coach.CoachName, Coach.CoachSurname, Coach.Gender, Country.CountryName, Country.AverageWage
+FROM Coach
+JOIN Country ON Coach.CountryId = Country.CountryId;
+
+--Drugi upit
+SELECT 
+    a.ActivityName,
+    s.Date,
+    STRING_AGG(c.CoachSurname || ', ' || LEFT(c.CoachName, 1) || '.', ', ') AS MainCoaches
+FROM Activity a
+JOIN Schedule s ON a.ActivityId = s.ActivityId
+JOIN CoachActivity ca ON a.ActivityId = ca.ActivityId
+JOIN Coach c ON ca.CoachId = c.CoachId
+GROUP BY a.ActivityName, s.Date;
+
+--Treći upit
+SELECT 
+    fc.FitnessName,
+    COUNT(a.ActivityId) AS ActivityCount
+FROM FitnessCenter fc
+JOIN Activity a ON fc.FitnessId = a.FitnessId
+GROUP BY fc.FitnessName
+ORDER BY ActivityCount DESC
+LIMIT 3;
+
+--Četvrti upit
+SELECT 
+    c.CoachName || ' ' || c.CoachSurname AS CoachFullName,
+    CASE 
+        WHEN COUNT(ca.ActivityId) = 0 THEN 'DOSTUPAN'
+        WHEN COUNT(ca.ActivityId) <= 3 THEN 'AKTIVAN'
+        ELSE 'POTPUNO ZAUZET'
+    END AS Availability
+FROM Coach c
+LEFT JOIN CoachActivity ca ON c.CoachId = ca.CoachId
+GROUP BY c.CoachId;
+
+--Peti upit
+SELECT 
+    m.MemberName || ' ' || m.MemberSurname AS MemberFullName
+FROM Members m
+JOIN MemberActivity ma ON m.MemberId = ma.MemberId;
+
+--Šesti upit
+SELECT DISTINCT 
+    c.CoachName || ' ' || c.CoachSurname AS CoachFullName
+FROM Coach c
+JOIN CoachActivity ca ON c.CoachId = ca.CoachId
+JOIN Activity a ON ca.ActivityId = a.ActivityId
+JOIN Schedule s ON a.ActivityId = s.ActivityId
+WHERE s.Date BETWEEN '2019-01-01' AND '2022-12-31';
+
+--Sedmi upit
+SELECT 
+    ActivityType,
+    CountryName,
+    ROUND(AVG(ActivityParticipationCount), 0) AS AvgParticipation
+FROM (
+    SELECT 
+        a.ActivityType,
+        cn.CountryName,
+        COUNT(ma.MemberId) AS ActivityParticipationCount
+    FROM MemberActivity ma
+    JOIN Activity a ON ma.ActivityId = a.ActivityId
+    JOIN Members m ON ma.MemberId = m.MemberId
+    JOIN Country cn ON m.CountryId = cn.CountryId
+    GROUP BY a.ActivityType, cn.CountryName
+) AS ActivityParticipationCounts
+GROUP BY ActivityType, CountryName;
+
+--Osmi upit
+SELECT 
+    cn.CountryName,
+    COUNT(ma.MemberId) AS ParticipationCount
+FROM MemberActivity ma
+JOIN Activity a ON ma.ActivityId = a.ActivityId
+JOIN Members m ON ma.MemberId = m.MemberId
+JOIN Country cn ON m.CountryId = cn.CountryId
+WHERE a.ActivityType = 'injury rehabilitation'
+GROUP BY cn.CountryName
+ORDER BY ParticipationCount DESC
+LIMIT 10;
+
+--Deveti upit
+SELECT 
+    a.ActivityName,
+    CASE 
+        WHEN s.Capacity > (SELECT COUNT(ma.MemberId) 
+                           FROM MemberActivity ma 
+                           WHERE ma.ActivityId = a.ActivityId) 
+        THEN 'IMA MJESTA'
+        ELSE 'POPUNJENO'
+    END AS Availability
+FROM Activity a
+JOIN Schedule s ON a.ActivityId = s.ActivityId;
+
+--Deseti upit
+SELECT 
+    c.CoachName,
+    c.CoachSurname,
+    a.ActivityName,
+    SUM(participation_count * s.Capacity) AS Earnings
+FROM (
+    SELECT 
+        ma.ActivityId,
+        COUNT(ma.MemberId) AS participation_count
+    FROM MemberActivity ma
+    JOIN Schedule s ON ma.ActivityId = s.ActivityId
+    GROUP BY ma.ActivityId, s.Capacity
+) AS participation_details
+JOIN Activity a ON participation_details.ActivityId = a.ActivityId
+JOIN CoachActivity ca ON a.ActivityId = ca.ActivityId
+JOIN Coach c ON ca.CoachId = c.CoachId
+JOIN Schedule s ON a.ActivityId = s.ActivityId
+GROUP BY c.CoachName, c.CoachSurname, a.ActivityName;
